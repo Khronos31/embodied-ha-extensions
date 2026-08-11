@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -22,9 +23,7 @@ def owned_path(root: Path, *parts: str) -> Path:
 
 def atomic_write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temporary = tempfile.mkstemp(
-        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
-    )
+    fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
         os.fchmod(fd, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
@@ -34,12 +33,8 @@ def atomic_write_json(path: Path, payload: Any) -> None:
             os.fsync(handle.fileno())
         os.replace(temporary, path)
     except Exception:
-        try:
+        with suppress(OSError):
             os.close(fd)
-        except OSError:
-            pass
-        try:
+        with suppress(OSError):
             os.unlink(temporary)
-        except OSError:
-            pass
         raise

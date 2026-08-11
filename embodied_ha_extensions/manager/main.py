@@ -41,9 +41,7 @@ def run() -> int:
 
     signal.signal(signal.SIGTERM, request_stop)
     signal.signal(signal.SIGINT, request_stop)
-    supervisor = ExtensionSupervisor(
-        selected, data_root, logger=lambda msg: print(msg, flush=True)
-    )
+    supervisor = ExtensionSupervisor(selected, data_root, logger=lambda msg: print(msg, flush=True))
     status_path = owned_path(data_root, "status.json")
     print(
         f"[manager] catalog={len(catalog)} enabled={len(selected)} data={data_root}",

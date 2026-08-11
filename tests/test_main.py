@@ -42,3 +42,56 @@ def test_empty_catalog_runs_and_shuts_down_cleanly(tmp_path: Path):
     assert process.wait(timeout=5) == 0
     payload = json.loads(status.read_text(encoding="utf-8"))
     assert payload == {"schema_version": 1, "stopping": True, "apps": {}}
+
+
+def test_unknown_id_rejects_entire_startup_before_known_app_runs(tmp_path: Path):
+    options = tmp_path / "options.json"
+    catalog = tmp_path / "catalog"
+    apps = tmp_path / "apps"
+    app_dir = apps / "known"
+    marker = tmp_path / "must-not-exist"
+    catalog.mkdir()
+    app_dir.mkdir(parents=True)
+    executable = app_dir / "run.py"
+    executable.write_text(
+        f"#!/usr/bin/env python3\nfrom pathlib import Path\nPath({str(marker)!r}).touch()\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
+    manifest = {
+        "id": "known",
+        "name": "Known",
+        "version": "test",
+        "description": "fixture",
+        "entrypoint": ["run.py"],
+        "default_enabled": False,
+        "required_capabilities": [],
+        "input_contracts": [],
+        "output_files": [],
+        "extra_context_profiles": [],
+    }
+    (catalog / "known.json").write_text(json.dumps(manifest), encoding="utf-8")
+    options.write_text(
+        json.dumps({"enabled_extensions": ["known", "unknown"], "log_level": "info"}),
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env.update(
+        {
+            "EHA_EXTENSIONS_OPTIONS_FILE": str(options),
+            "EHA_EXTENSIONS_CATALOG_DIR": str(catalog),
+            "EHA_EXTENSIONS_APPS_DIR": str(apps),
+            "EHA_EXTENSIONS_DATA_ROOT": str(tmp_path / "data"),
+        }
+    )
+    result = subprocess.run(
+        [sys.executable, "-m", "manager.main"],
+        cwd=Path(__file__).resolve().parents[1] / "embodied_ha_extensions",
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 2
+    assert "unknown enabled extension ids" in result.stderr
+    assert not marker.exists()

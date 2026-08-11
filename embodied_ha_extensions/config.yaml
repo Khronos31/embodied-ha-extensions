@@ -1,0 +1,19 @@
+name: Embodied HA Extensions (development)
+version: "0.1.0-dev.1"
+slug: embodied_ha_extensions
+description: "Development skeleton for curated first-party Embodied HA extensions. No usable extension is included yet."
+advanced: true
+stage: experimental
+arch:
+  - amd64
+  - aarch64
+init: true
+startup: application
+boot: manual
+options:
+  log_level: info
+  enabled_extensions: []
+schema:
+  log_level: list(debug|info|warning|error)
+  enabled_extensions:
+    - str

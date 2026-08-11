@@ -66,23 +66,56 @@ def test_crashing_app_is_quarantined_without_stopping_peer(tmp_path: Path):
         stable_after_seconds=10,
         shutdown_timeout_seconds=0.3,
     )
-    supervisor = ExtensionSupervisor(
-        [stable, crashing], tmp_path / "data", policy=policy
-    )
+    supervisor = ExtensionSupervisor([stable, crashing], tmp_path / "data", policy=policy)
     try:
         wait_until(
-            lambda: (
-                supervisor.tick() is None
-                and supervisor.runtimes["crashing"].quarantined
-            )
+            lambda: supervisor.tick() is None and supervisor.runtimes["crashing"].quarantined
         )
         stable_runtime = supervisor.runtimes["stable"]
         assert stable_runtime.process is not None
         assert stable_runtime.process.poll() is None
         assert stable_runtime.starts == 1
-        assert (tmp_path / "data" / "apps" / "crashing" / "starts").read_text().count(
-            "start"
-        ) == 3
+        assert (tmp_path / "data" / "apps" / "crashing" / "starts").read_text().count("start") == 3
+    finally:
+        supervisor.shutdown()
+
+
+def test_restart_backoff_is_bounded_exponential(tmp_path: Path):
+    crashing = make_app(tmp_path, "crashing", "raise SystemExit(4)\n")
+    now = [100.0]
+    supervisor = ExtensionSupervisor(
+        [crashing],
+        tmp_path / "data",
+        policy=RestartPolicy(
+            initial_seconds=1,
+            maximum_seconds=2,
+            quarantine_after=4,
+            stable_after_seconds=300,
+        ),
+        clock=lambda: now[0],
+    )
+    try:
+        supervisor.tick()
+        first = supervisor.runtimes["crashing"].process
+        assert first is not None
+        first.wait(timeout=2)
+
+        now[0] = 101.0
+        supervisor.tick()
+        runtime = supervisor.runtimes["crashing"]
+        assert runtime.state == "backoff"
+        assert runtime.restart_at == 102.0
+
+        now[0] = 102.0
+        supervisor.tick()
+        second = runtime.process
+        assert second is not None
+        second.wait(timeout=2)
+
+        now[0] = 103.0
+        supervisor.tick()
+        assert runtime.state == "backoff"
+        assert runtime.restart_at == 105.0
     finally:
         supervisor.shutdown()
 
@@ -110,9 +143,7 @@ def test_shutdown_terminates_child_and_grandchild_process_group(tmp_path: Path):
     assert effectively_alive(child_pid)
 
     supervisor.shutdown()
-    wait_until(
-        lambda: not effectively_alive(parent_pid) and not effectively_alive(child_pid)
-    )
+    wait_until(lambda: not effectively_alive(parent_pid) and not effectively_alive(child_pid))
     assert supervisor.runtimes["tree"].state == "stopped"
 
 

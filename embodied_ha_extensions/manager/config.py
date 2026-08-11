@@ -26,9 +26,7 @@ def load_options(path: Path) -> ManagerConfig:
     if unknown:
         raise ConfigError(f"unknown options: {unknown}")
     enabled = raw.get("enabled_extensions", [])
-    if not isinstance(enabled, list) or any(
-        not isinstance(item, str) for item in enabled
-    ):
+    if not isinstance(enabled, list) or any(not isinstance(item, str) for item in enabled):
         raise ConfigError("enabled_extensions must be a list of ids")
     log_level = raw.get("log_level", "info")
     if log_level not in {"debug", "info", "warning", "error"}:

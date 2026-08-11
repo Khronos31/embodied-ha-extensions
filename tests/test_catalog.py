@@ -33,9 +33,7 @@ def build_catalog(tmp_path: Path, raw: dict | None = None):
     executable = app_dir / "run.py"
     executable.write_text("#!/usr/bin/env python3\n", encoding="utf-8")
     executable.chmod(0o755)
-    (catalog_dir / "sample.json").write_text(
-        json.dumps(raw or manifest()), encoding="utf-8"
-    )
+    (catalog_dir / "sample.json").write_text(json.dumps(raw or manifest()), encoding="utf-8")
     return catalog_dir, apps_root
 
 

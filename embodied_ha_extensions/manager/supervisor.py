@@ -6,6 +6,7 @@ import subprocess
 import threading
 import time
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -96,10 +97,8 @@ class ExtensionSupervisor:
     def _signal_group(pgid: int | None, sig: signal.Signals) -> None:
         if pgid is None:
             return
-        try:
+        with suppress(ProcessLookupError):
             os.killpg(pgid, sig)
-        except ProcessLookupError:
-            pass
 
     def _handle_exit(self, runtime: AppRuntime, now: float) -> None:
         assert runtime.process is not None
@@ -136,8 +135,7 @@ class ExtensionSupervisor:
         runtime.restart_at = now + delay
         runtime.state = "backoff"
         self.logger(
-            f"[manager] exited app={runtime.manifest.id} exit={code} "
-            f"restart_in={delay:.2f}s"
+            f"[manager] exited app={runtime.manifest.id} exit={code} restart_in={delay:.2f}s"
         )
 
     def tick(self) -> None:
@@ -147,27 +145,19 @@ class ExtensionSupervisor:
         for runtime in self.runtimes.values():
             if runtime.process is not None:
                 self._handle_exit(runtime, now)
-            if (
-                runtime.process is None
-                and not runtime.quarantined
-                and now >= runtime.restart_at
-            ):
+            if runtime.process is None and not runtime.quarantined and now >= runtime.restart_at:
                 self._launch(runtime, now)
 
     def shutdown(self) -> None:
         self.stopping = True
-        running = [
-            runtime for runtime in self.runtimes.values() if runtime.process is not None
-        ]
+        running = [runtime for runtime in self.runtimes.values() if runtime.process is not None]
         for runtime in running:
             runtime.state = "stopping"
             self._signal_group(runtime.pgid, signal.SIGTERM)
 
         deadline = self.clock() + self.policy.shutdown_timeout_seconds
         while running and self.clock() < deadline:
-            running = [
-                item for item in running if item.process and item.process.poll() is None
-            ]
+            running = [item for item in running if item.process and item.process.poll() is None]
             if running:
                 time.sleep(0.02)
 

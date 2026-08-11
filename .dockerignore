@@ -1,0 +1,12 @@
+**/__pycache__
+**/*.pyc
+.git
+.github
+.pytest_cache
+.ruff_cache
+tests
+scripts
+CONDUCTOR.md
+requirements-dev.txt
+ruff.toml
+pytest.ini

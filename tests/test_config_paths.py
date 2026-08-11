@@ -12,9 +12,7 @@ from manager.paths import PathBoundaryError, atomic_write_json, owned_path
 def test_options_contain_ids_only(tmp_path: Path):
     path = tmp_path / "options.json"
     path.write_text(
-        json.dumps(
-            {"enabled_extensions": ["ambient_speech_context"], "log_level": "info"}
-        ),
+        json.dumps({"enabled_extensions": ["ambient_speech_context"], "log_level": "info"}),
         encoding="utf-8",
     )
     options = load_options(path)

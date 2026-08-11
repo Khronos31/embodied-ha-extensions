@@ -29,20 +29,14 @@ class CatalogError(ValueError):
 
 
 def _string_list(value: object, field: str) -> tuple[str, ...]:
-    if not isinstance(value, list) or any(
-        not isinstance(item, str) or not item for item in value
-    ):
+    if not isinstance(value, list) or any(not isinstance(item, str) or not item for item in value):
         raise CatalogError(f"{field} must be a list of non-empty strings")
     return tuple(value)
 
 
 def _relative_output(value: str) -> None:
     path = PurePosixPath(value)
-    if (
-        path.is_absolute()
-        or not path.parts
-        or any(part in {"", ".", ".."} for part in path.parts)
-    ):
+    if path.is_absolute() or not path.parts or any(part in {"", ".", ".."} for part in path.parts):
         raise CatalogError(f"output_files contains an unsafe path: {value!r}")
 
 
@@ -57,9 +51,7 @@ def _load_manifest(path: Path, apps_root: Path) -> AppManifest:
     if fields != _REQUIRED_FIELDS:
         missing = sorted(_REQUIRED_FIELDS - fields)
         extra = sorted(fields - _REQUIRED_FIELDS)
-        raise CatalogError(
-            f"manifest {path.name} fields mismatch missing={missing} extra={extra}"
-        )
+        raise CatalogError(f"manifest {path.name} fields mismatch missing={missing} extra={extra}")
 
     app_id = raw["id"]
     if not isinstance(app_id, str) or not _APP_ID.fullmatch(app_id):
@@ -85,9 +77,7 @@ def _load_manifest(path: Path, apps_root: Path) -> AppManifest:
     except PathBoundaryError as exc:
         raise CatalogError(str(exc)) from exc
     if not executable.is_file() or not os.access(executable, os.X_OK):
-        raise CatalogError(
-            f"entrypoint is not an executable bundled file: {entrypoint[0]}"
-        )
+        raise CatalogError(f"entrypoint is not an executable bundled file: {entrypoint[0]}")
     command = (str(executable), *entrypoint[1:])
 
     capabilities = _string_list(raw["required_capabilities"], "required_capabilities")
@@ -129,9 +119,7 @@ def load_catalog(catalog_dir: Path, apps_root: Path) -> dict[str, AppManifest]:
     return manifests
 
 
-def select_apps(
-    catalog: dict[str, AppManifest], requested: list[str]
-) -> list[AppManifest]:
+def select_apps(catalog: dict[str, AppManifest], requested: list[str]) -> list[AppManifest]:
     if len(requested) != len(set(requested)):
         raise CatalogError("enabled_extensions contains duplicate ids")
     unknown = sorted(set(requested) - set(catalog))
