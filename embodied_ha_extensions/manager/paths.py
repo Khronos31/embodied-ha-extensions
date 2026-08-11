@@ -1,0 +1,45 @@
+from __future__ import annotations
+
+import json
+import os
+import tempfile
+from pathlib import Path
+from typing import Any
+
+
+class PathBoundaryError(ValueError):
+    pass
+
+
+def owned_path(root: Path, *parts: str) -> Path:
+    """Resolve a path and reject absolute, traversal, and symlink escapes."""
+    resolved_root = root.resolve(strict=False)
+    candidate = resolved_root.joinpath(*parts).resolve(strict=False)
+    if candidate != resolved_root and resolved_root not in candidate.parents:
+        raise PathBoundaryError(f"path escapes owned root: {candidate}")
+    return candidate
+
+
+def atomic_write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
+    )
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    except Exception:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        try:
+            os.unlink(temporary)
+        except OSError:
+            pass
+        raise
