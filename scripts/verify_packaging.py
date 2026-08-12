@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -18,28 +19,49 @@ def main() -> int:
     assert config["slug"] == "embodied_ha_extensions"
     assert config["stage"] == "experimental"
     assert config["boot"] == "manual"
-    for forbidden in (
-        "ingress",
-        "map",
-        "hassio_api",
-        "homeassistant_api",
-        "services",
-        "privileged",
-        "full_access",
-    ):
-        assert forbidden not in config, f"development skeleton must not declare {forbidden}"
-    assert config["options"] == {"log_level": "info", "enabled_extensions": []}
+    assert config["hassio_api"] is True
+    assert config["services"] == ["mqtt:need"]
+    assert config["map"] == ["config:rw"]
+    for forbidden in ("ingress", "homeassistant_api", "privileged", "full_access"):
+        assert forbidden not in config, f"add-on must not declare {forbidden}"
+    assert config["options"] == {
+        "log_level": "info",
+        "enabled_extensions": [],
+        "ambient_speech_context": {"retention_hours": 24, "max_lines": 3},
+    }
     assert config["schema"] == {
         "log_level": "list(debug|info|warning|error)",
         "enabled_extensions": ["str"],
+        "ambient_speech_context": {
+            "retention_hours": "int(1,168)",
+            "max_lines": "int(1,20)",
+        },
     }
-    assert not list((ADDON / "catalog").glob("*.json"))
-    assert not any(
-        path.is_file() and path.name != "README.md" for path in (ADDON / "apps").iterdir()
-    )
 
+    manifests = list((ADDON / "catalog").glob("*.json"))
+    assert [path.name for path in manifests] == ["ambient_speech_context.json"]
+    manifest = json.loads(manifests[0].read_text(encoding="utf-8"))
+    assert manifest["id"] == "ambient_speech_context"
+    assert manifest["version"] == __version__
+    assert manifest["default_enabled"] is False
+    assert manifest["entrypoint"] == ["run.py"]
+    assert manifest["required_capabilities"] == ["mqtt", "supervisor_api", "config_rw"]
+    assert manifest["input_contracts"] == ["rtsp_assist_gateway.transcript.v1"]
+    app = ADDON / "apps" / "ambient_speech_context"
+    assert (app / "run.py").stat().st_mode & 0o111
+    assert not any(path.is_symlink() for path in app.rglob("*"))
+
+    requirements = (ADDON / "requirements.txt").read_text(encoding="utf-8").splitlines()
+    assert requirements == ["paho-mqtt==2.1.0"]
     dockerfile = (ADDON / "Dockerfile").read_text(encoding="utf-8")
-    for required in ("COPY manager", "COPY catalog", "COPY apps", 'CMD ["/app/run.sh"]'):
+    for required in (
+        "COPY requirements.txt",
+        "pip install --no-cache-dir",
+        "COPY manager",
+        "COPY catalog",
+        "COPY apps",
+        'CMD ["/app/run.sh"]',
+    ):
         assert required in dockerfile
     assert (ADDON / "run.sh").stat().st_mode & 0o111
     print("packaging verification passed")

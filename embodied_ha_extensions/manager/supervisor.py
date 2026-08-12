@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import signal
 import subprocess
@@ -43,6 +44,7 @@ class ExtensionSupervisor:
         manifests: list[AppManifest],
         data_root: Path,
         *,
+        extension_configs: dict[str, dict] | None = None,
         policy: RestartPolicy | None = None,
         clock: Callable[[], float] = time.monotonic,
         logger: Callable[[str], None] = print,
@@ -51,6 +53,7 @@ class ExtensionSupervisor:
         self.clock = clock
         self.logger = logger
         self.data_root = data_root.resolve(strict=False)
+        self.extension_configs = extension_configs or {}
         self.runtimes = {item.id: AppRuntime(manifest=item) for item in manifests}
         self.stopping = False
 
@@ -68,6 +71,12 @@ class ExtensionSupervisor:
         env = os.environ.copy()
         env["EHA_EXTENSION_ID"] = app_id
         env["EHA_EXTENSION_DATA_DIR"] = str(app_data)
+        env["EHA_EXTENSIONS_DATA_ROOT"] = str(self.data_root)
+        env["EHA_EXTENSION_CONFIG_JSON"] = json.dumps(
+            self.extension_configs.get(app_id, {}),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
         process = subprocess.Popen(
             list(runtime.manifest.command),
             cwd=runtime.manifest.app_dir,
