@@ -21,7 +21,13 @@ def main() -> int:
     assert config["boot"] == "manual"
     assert config["hassio_api"] is True
     assert config["services"] == ["mqtt:need"]
-    assert config["map"] == ["config:rw"]
+    assert config["map"] == [
+        {
+            "type": "homeassistant_config",
+            "read_only": False,
+            "path": "/config",
+        }
+    ]
     for forbidden in ("ingress", "homeassistant_api", "privileged", "full_access"):
         assert forbidden not in config, f"add-on must not declare {forbidden}"
     assert config["options"] == {

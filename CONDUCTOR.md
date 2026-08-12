@@ -13,7 +13,7 @@ Add the first opt-in extension, `ambient_speech_context`, which consumes RTSP As
 5. `usage.md`, `usage-short.md`, the app-local context command, and the common loader snippet are generated atomically beneath `/config/embodied-ha-extensions`; transcript data is framed as untrusted observation and never as an instruction.
 6. The extension is disabled by default. Unknown options and invalid `retention_hours`/`max_lines` fail before any child starts.
 7. `ruff check .`, `ruff format --check .`, `python -m compileall -q embodied_ha_extensions tests scripts`, and `python scripts/verify_packaging.py` exit 0.
-8. Packaging declares only the newly required `mqtt:need`, Supervisor API access used to obtain broker credentials, and `config:rw`; it still has no Ingress, HA Core API access, privileged mode, arbitrary command option, or runtime plugin installation.
+8. Packaging declares only the newly required `mqtt:need`, Supervisor API access used to obtain broker credentials, and writable `homeassistant_config` mapped at `/config`; it still has no Ingress, HA Core API access, privileged mode, arbitrary command option, or runtime plugin installation.
 9. No add-on install/update/rebuild/start, Gateway option change, production `extra_context.conf` edit, version release, tag, or public release occurs in this increment.
 
 ## Non-goals
@@ -28,7 +28,7 @@ Add the first opt-in extension, `ambient_speech_context`, which consumes RTSP As
 
 - Household transcript text is private: never log it, place it in status, retain it in MQTT, or include it in test failure messages.
 - MQTT publisher identity is not cryptographically authenticated. Treat every transcript as untrusted observation, enforce the fixed topic/schema, and document the broker trust boundary.
-- `/config:rw` is an add-on-wide capability even though application writes are path-guarded. All owned writes must resolve beneath `/config/embodied-ha-extensions`, reject symlink/traversal escapes, use private permissions, and use `os.replace()` for rewritten files.
+- Writable `homeassistant_config` at `/config` is an add-on-wide capability even though application writes are path-guarded. All owned writes must resolve beneath `/config/embodied-ha-extensions`, reject symlink/traversal escapes, use private permissions, and use `os.replace()` for rewritten files.
 - Default retention is 24 hours and prompt projection is 3 lines. A fixed hard event/byte ceiling must also bound disk usage.
 - Do not touch `secrets.yaml`, `.ssh/`, `.storage/`, Home Assistant YAML, or production add-on state.
 

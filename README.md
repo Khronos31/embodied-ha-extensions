@@ -41,7 +41,7 @@ The default history window is 24 hours and the prompt projection is the latest 3
 
 The generated context labels transcripts as **untrusted environmental observations**, not commands. This is an interpretation boundary, not publisher authentication: any MQTT client with broker access may read or forge messages on the fixed topic. Enabling the feature therefore exposes household transcripts to authorized broker clients and stores them on the Home Assistant configuration volume.
 
-The add-on needs Supervisor MQTT service discovery and `/config:rw`. HAOS grants that mount to the whole add-on container; application path checks are not a sandbox against compromised bundled code. No runtime code or user-provided entrypoint is accepted.
+The add-on needs Supervisor MQTT service discovery and a writable `homeassistant_config` mount at `/config`. HAOS grants that mount to the whole add-on container; application path checks are not a sandbox against compromised bundled code. No runtime code or user-provided entrypoint is accepted.
 
 ### Development configuration
 

@@ -1,8 +1,7 @@
 name: Embodied HA Extensions (development)
-version: "0.1.0-dev.2"
+version: "0.1.0-dev.3"
 slug: embodied_ha_extensions
 description: "Development build for curated, opt-in first-party Embodied HA extensions."
-advanced: true
 stage: experimental
 arch:
   - amd64
@@ -14,7 +13,9 @@ hassio_api: true
 services:
   - mqtt:need
 map:
-  - config:rw
+  - type: homeassistant_config
+    read_only: false
+    path: /config
 options:
   log_level: info
   enabled_extensions: []
