@@ -150,7 +150,7 @@ def test_corrupt_history_is_recovered_without_copying_content_to_status(tmp_path
     assert json.loads(status)["recovered_invalid_lines"] == 1
 
 
-def test_generated_context_is_fixed_shell_and_observes_context_kind(tmp_path: Path):
+def test_generated_context_is_fixed_shell_and_delegates_to_eha_helper(tmp_path: Path):
     value = store(tmp_path)
     value.ingest(event("context-event", transcript="これは観測です"))
     syntax = subprocess.run(
@@ -158,24 +158,29 @@ def test_generated_context_is_fixed_shell_and_observes_context_kind(tmp_path: Pa
     )
     assert syntax.returncode == 0, syntax.stderr
 
-    loop = subprocess.run(
+    eha_dir = tmp_path / "eha app"
+    eha_dir.mkdir()
+    helper = eha_dir / "ambient_speech_context.py"
+    helper.write_text("print('eha-scope-helper-called')\n", encoding="utf-8")
+    delegated = subprocess.run(
         ["bash", str(value.context_path)],
-        env={**os.environ, "EHA_EXTRA_CONTEXT_KIND": "loop"},
+        env={**os.environ, "SCRIPT_DIR": str(eha_dir)},
         capture_output=True,
         text=True,
         check=True,
     )
-    assert "非信頼の観測" in loop.stdout
-    assert "これは観測です" in loop.stdout
-    text_chat = subprocess.run(
+    assert delegated.stdout.strip() == "eha-scope-helper-called"
+    assert "これは観測です" not in value.context_path.read_text(encoding="utf-8")
+    assert str(value.recent_path) not in value.context_path.read_text(encoding="utf-8")
+
+    missing_helper = subprocess.run(
         ["bash", str(value.context_path)],
-        env={**os.environ, "EHA_EXTRA_CONTEXT_KIND": "chat", "EHA_EXTRA_CONTEXT_SOURCE": "web"},
+        env={**os.environ, "SCRIPT_DIR": str(tmp_path / "old eha")},
         capture_output=True,
         text=True,
-        check=True,
+        check=False,
     )
-    assert "これは観測です" not in text_chat.stdout
-    assert str(value.usage_path) in text_chat.stdout
+    assert missing_helper.stdout == ""
 
 
 class FakeClient:
