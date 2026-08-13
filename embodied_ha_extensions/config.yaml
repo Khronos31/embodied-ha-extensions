@@ -1,7 +1,7 @@
-name: Embodied HA Extensions (development)
-version: "0.1.0-dev.3"
+name: Embodied HA Extensions
+version: "0.1.0"
 slug: embodied_ha_extensions
-description: "Development build for curated, opt-in first-party Embodied HA extensions."
+description: "Curated, opt-in first-party extensions for Embodied HA. Nothing runs until one is selected."
 stage: experimental
 arch:
   - amd64

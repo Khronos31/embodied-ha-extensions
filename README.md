@@ -2,7 +2,19 @@
 
 Small, first-party, opt-in extensions for [Embodied HA](https://github.com/Khronos31/embodied-ha), hosted in one Home Assistant OS add-on.
 
-> **Development snapshot:** `ambient_speech_context` is implemented for automated review, but this repository is not yet an installable supported release. There is no release tag or Add-on Store installation guidance. A Supervisor canary, privacy review, and shadow comparison are still required before v0.1.0.
+## Installation
+
+Add [`https://github.com/Khronos31/embodied-ha-addons`](https://github.com/Khronos31/embodied-ha-addons)
+to the Home Assistant add-on store, then install **Embodied HA Extensions** from it. This repository
+holds the source and is not itself an add-on repository.
+
+Installing the add-on runs nothing. Pick an extension under **Enabled extensions** in the configuration
+tab; each is disabled by default.
+
+> `0.1.0` ships one extension, `ambient_speech_context`, and the add-on remains `stage: experimental`.
+> It reached this release through a Supervisor build, a six-hour single-source live run of its Gateway
+> producer, and a privacy review of what it sends and keeps. Its own long-run behaviour with a resident
+> connected has not been observed yet.
 
 ## Why this exists
 

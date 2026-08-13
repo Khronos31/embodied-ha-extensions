@@ -1,7 +1,7 @@
 {
   "id": "ambient_speech_context",
   "name": "Ambient Speech Context",
-  "version": "0.1.0-dev.3",
+  "version": "0.1.0",
   "description": "Stores bounded, opt-in context from RTSP Assist Gateway transcript events.",
   "entrypoint": ["run.py"],
   "default_enabled": false,

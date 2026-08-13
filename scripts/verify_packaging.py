@@ -36,9 +36,7 @@ def main() -> int:
         "ambient_speech_context": {"retention_hours": 24, "max_lines": 3},
     }
     manifests = list((ADDON / "catalog").glob("*.json"))
-    catalog_ids = sorted(
-        json.loads(path.read_text(encoding="utf-8"))["id"] for path in manifests
-    )
+    catalog_ids = sorted(json.loads(path.read_text(encoding="utf-8"))["id"] for path in manifests)
     assert config["schema"] == {
         "log_level": "list(debug|info|warning|error)",
         "enabled_extensions": [f"list({'|'.join(catalog_ids)})"],
@@ -64,7 +62,6 @@ def main() -> int:
             )
         nested = section["ambient_speech_context"].get("fields") or {}
         assert set(nested) == set(config["schema"]["ambient_speech_context"])
-
 
     assert [path.name for path in manifests] == ["ambient_speech_context.json"]
     manifest = json.loads(manifests[0].read_text(encoding="utf-8"))
