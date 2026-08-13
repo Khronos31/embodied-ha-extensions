@@ -1,8 +1,7 @@
-name: Embodied HA Extensions (development)
-version: "0.1.0-dev.1"
+name: Embodied HA Extensions
+version: "0.1.0"
 slug: embodied_ha_extensions
-description: "Development skeleton for curated first-party Embodied HA extensions. No usable extension is included yet."
-advanced: true
+description: "Curated, opt-in first-party extensions for Embodied HA. Nothing runs until one is selected."
 stage: experimental
 arch:
   - amd64
@@ -10,10 +9,23 @@ arch:
 init: true
 startup: application
 boot: manual
+hassio_api: true
+services:
+  - mqtt:need
+map:
+  - type: homeassistant_config
+    read_only: false
+    path: /config
 options:
   log_level: info
   enabled_extensions: []
+  ambient_speech_context:
+    retention_hours: 24
+    max_lines: 3
 schema:
   log_level: list(debug|info|warning|error)
   enabled_extensions:
-    - str
+    - list(ambient_speech_context)
+  ambient_speech_context:
+    retention_hours: int(1,168)
+    max_lines: int(1,20)

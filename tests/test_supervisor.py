@@ -168,3 +168,31 @@ def test_child_receives_only_owned_data_directory(tmp_path: Path):
         assert str(identity.resolve()).startswith(str((tmp_path / "owned").resolve()))
     finally:
         supervisor.shutdown()
+
+
+def test_child_receives_only_its_validated_extension_config(tmp_path: Path):
+    app = make_app(
+        tmp_path,
+        "configured",
+        "import os\nfrom pathlib import Path\n"
+        "data = Path(os.environ['EHA_EXTENSION_DATA_DIR'])\n"
+        "(data / 'config').write_text(os.environ['EHA_EXTENSION_CONFIG_JSON'], encoding='utf-8')\n"
+        "(data / 'root').write_text(os.environ['EHA_EXTENSIONS_DATA_ROOT'], encoding='utf-8')\n",
+    )
+    root = tmp_path / "owned"
+    supervisor = ExtensionSupervisor(
+        [app],
+        root,
+        extension_configs={"configured": {"retention_hours": 24, "max_lines": 3}},
+        policy=RestartPolicy(initial_seconds=10, quarantine_after=2),
+    )
+    try:
+        supervisor.tick()
+        config_path = root / "apps" / "configured" / "config"
+        wait_until(config_path.exists)
+        assert config_path.read_text(encoding="utf-8") == ('{"retention_hours":24,"max_lines":3}')
+        assert (root / "apps" / "configured" / "root").read_text(encoding="utf-8") == str(
+            root.resolve()
+        )
+    finally:
+        supervisor.shutdown()

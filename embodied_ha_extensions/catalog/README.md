@@ -1,5 +1,3 @@
 # Bundled catalog
 
-Only reviewed `*.json` manifests stored in this directory are loaded. A manifest ID must match its filename and a same-ID directory under `/app/apps`. Its entrypoint is one executable filename inside that directory; shell expressions and paths are not accepted.
-
-The development skeleton intentionally ships an empty catalog. Test manifests live only in temporary pytest directories.
+Only reviewed `*.json` manifests stored in this directory are loaded. Runtime configuration may select stable IDs but cannot add manifests, commands, repositories, or code. `ambient_speech_context.json` remains disabled by default until explicitly selected.

@@ -5,11 +5,13 @@ import os
 import signal
 import sys
 import threading
+from contextlib import suppress
 from pathlib import Path
 
 from .catalog import CatalogError, load_catalog, select_apps
 from .config import ConfigError, load_options
-from .paths import atomic_write_json, owned_path
+from .context_files import sync_context_files
+from .paths import PathBoundaryError, atomic_write_json, owned_path
 from .supervisor import ExtensionSupervisor
 
 
@@ -21,7 +23,7 @@ def run() -> int:
     options_path = _path("EHA_EXTENSIONS_OPTIONS_FILE", "/data/options.json")
     catalog_dir = _path("EHA_EXTENSIONS_CATALOG_DIR", "/app/catalog")
     apps_root = _path("EHA_EXTENSIONS_APPS_DIR", "/app/apps")
-    data_root = _path("EHA_EXTENSIONS_DATA_ROOT", "/data/extensions")
+    data_root = _path("EHA_EXTENSIONS_DATA_ROOT", "/config/embodied-ha-extensions")
     try:
         options = load_options(options_path)
         logging.basicConfig(
@@ -30,7 +32,10 @@ def run() -> int:
         )
         catalog = load_catalog(catalog_dir, apps_root)
         selected = select_apps(catalog, options.enabled_extensions)
-    except (ConfigError, CatalogError) as exc:
+        sync_context_files(data_root, catalog, [])
+    except (ConfigError, CatalogError, PathBoundaryError, OSError) as exc:
+        with suppress(PathBoundaryError, OSError):
+            sync_context_files(data_root, {}, [])
         print(f"[manager] configuration rejected: {exc}", file=sys.stderr, flush=True)
         return 2
 
@@ -41,19 +46,37 @@ def run() -> int:
 
     signal.signal(signal.SIGTERM, request_stop)
     signal.signal(signal.SIGINT, request_stop)
-    supervisor = ExtensionSupervisor(selected, data_root, logger=lambda msg: print(msg, flush=True))
+    supervisor = ExtensionSupervisor(
+        selected,
+        data_root,
+        extension_configs=options.extension_configs,
+        logger=lambda msg: print(msg, flush=True),
+    )
     status_path = owned_path(data_root, "status.json")
     print(
         f"[manager] catalog={len(catalog)} enabled={len(selected)} data={data_root}",
         flush=True,
     )
+    published_context_ids: frozenset[str] = frozenset()
     try:
         while not stop_event.is_set():
             supervisor.tick()
+            running = [
+                runtime.manifest
+                for runtime in supervisor.runtimes.values()
+                if runtime.state == "running"
+                and runtime.process is not None
+                and runtime.process.poll() is None
+            ]
+            running_ids = frozenset(manifest.id for manifest in running)
+            if running_ids != published_context_ids:
+                sync_context_files(data_root, catalog, running)
+                published_context_ids = running_ids
             atomic_write_json(status_path, supervisor.status())
             stop_event.wait(0.5)
     finally:
         supervisor.shutdown()
+        sync_context_files(data_root, catalog, [])
         atomic_write_json(status_path, supervisor.status())
     return 0
 

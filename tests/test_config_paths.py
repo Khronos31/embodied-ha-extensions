@@ -17,6 +17,10 @@ def test_options_contain_ids_only(tmp_path: Path):
     )
     options = load_options(path)
     assert options.enabled_extensions == ["ambient_speech_context"]
+    assert options.extension_configs["ambient_speech_context"] == {
+        "retention_hours": 24,
+        "max_lines": 3,
+    }
 
 
 @pytest.mark.parametrize(
@@ -25,6 +29,9 @@ def test_options_contain_ids_only(tmp_path: Path):
         {"enabled_extensions": "sample"},
         {"enabled_extensions": ["sample"], "command": "sh -c id"},
         {"enabled_extensions": [], "log_level": "verbose"},
+        {"enabled_extensions": [], "ambient_speech_context": {"retention_hours": 0}},
+        {"enabled_extensions": [], "ambient_speech_context": {"max_lines": 21}},
+        {"enabled_extensions": [], "ambient_speech_context": {"shell": "id"}},
     ],
 )
 def test_options_fail_closed(payload: dict, tmp_path: Path):

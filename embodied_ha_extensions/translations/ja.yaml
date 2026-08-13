@@ -1,0 +1,31 @@
+configuration:
+  enabled_extensions:
+    name: 有効にする拡張
+    description: >-
+      ここで選ぶまで何も動きません。このアドオンを入れただけでは、カタログが使えるようになるだけです。
+      周辺会話コンテキスト（ambient_speech_context）は、RTSP Assist Gateway が出す文字起こしイベントを
+      上限つきで保存し、Embodied HA の住人が「さっき部屋で話していたこと」を参照できるようにします。
+      Gateway 側で文字起こしイベントを有効にしていること、Embodied HA 2.1.21 以降であることが前提です。
+  log_level:
+    name: ログレベル
+    description: >-
+      このアドオンが自分のログへどれだけ書くか。どのレベルでも、文字起こしの本文はログにも
+      ステータスファイルにも書きません。
+  ambient_speech_context:
+    name: 周辺会話コンテキスト
+    description: >-
+      周辺会話の拡張の設定です。上で有効にしているときだけ効きます。
+    fields:
+      retention_hours:
+        name: 保持期間（時間）
+        description: >-
+          保存した文字起こしを何時間で捨てるか。住人へ渡す件数とは別の設定です。音声そのものは保存しません。
+          いま残っている分をすぐ消したいときは、このアドオンを停止してから
+          /config/embodied-ha-extensions/apps/ambient_speech_context/ の auditory_events.jsonl と
+          recent_auditory_events.jsonl を削除し、起動し直してください。稼働中に消すと、次の発話が
+          届いたときにメモリ上の履歴から書き戻されます。
+      max_lines:
+        name: 住人へ渡す件数
+        description: >-
+          直近いくつの発話を住人のターンへ渡すか。履歴そのものは非公開ファイルに残り、
+          ここで決まるのは「エージェントの目の前に何件置くか」だけです。
