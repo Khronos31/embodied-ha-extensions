@@ -25,7 +25,7 @@ options:
 schema:
   log_level: list(debug|info|warning|error)
   enabled_extensions:
-    - str
+    - list(ambient_speech_context)
   ambient_speech_context:
     retention_hours: int(1,168)
     max_lines: int(1,20)

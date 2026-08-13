@@ -35,16 +35,37 @@ def main() -> int:
         "enabled_extensions": [],
         "ambient_speech_context": {"retention_hours": 24, "max_lines": 3},
     }
+    manifests = list((ADDON / "catalog").glob("*.json"))
+    catalog_ids = sorted(
+        json.loads(path.read_text(encoding="utf-8"))["id"] for path in manifests
+    )
     assert config["schema"] == {
         "log_level": "list(debug|info|warning|error)",
-        "enabled_extensions": ["str"],
+        "enabled_extensions": [f"list({'|'.join(catalog_ids)})"],
         "ambient_speech_context": {
             "retention_hours": "int(1,168)",
             "max_lines": "int(1,20)",
         },
-    }
+    }, "enabled_extensions must offer exactly the bundled catalog ids"
 
-    manifests = list((ADDON / "catalog").glob("*.json"))
+    # The configuration tab is the only place a user selects an extension, so every schema key
+    # needs a name and a description there, in each shipped language.
+    for language in ("en", "ja"):
+        path = ADDON / "translations" / f"{language}.yaml"
+        assert path.is_file(), f"missing translations/{language}.yaml"
+        translated = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        section = translated.get("configuration") or {}
+        assert set(section) == set(config["schema"]), (
+            f"translations/{language}.yaml must describe exactly the schema keys"
+        )
+        for key, entry in section.items():
+            assert entry.get("name") and entry.get("description"), (
+                f"translations/{language}.yaml: {key} needs a name and a description"
+            )
+        nested = section["ambient_speech_context"].get("fields") or {}
+        assert set(nested) == set(config["schema"]["ambient_speech_context"])
+
+
     assert [path.name for path in manifests] == ["ambient_speech_context.json"]
     manifest = json.loads(manifests[0].read_text(encoding="utf-8"))
     assert manifest["id"] == "ambient_speech_context"

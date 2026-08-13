@@ -1,0 +1,30 @@
+configuration:
+  enabled_extensions:
+    name: Enabled extensions
+    description: >-
+      Nothing runs until an extension is selected here. Installing this add-on only makes the
+      catalog available. Ambient speech context stores bounded, opt-in context from RTSP Assist
+      Gateway transcript events, so that an Embodied HA resident can refer back to what was said
+      in the room. It requires the Gateway to be publishing transcript events, and Embodied HA
+      2.1.21 or newer to read them.
+  log_level:
+    name: Log level
+    description: >-
+      How much the add-on writes to its own log. Transcript text is never written to the log or
+      the status file at any level.
+  ambient_speech_context:
+    name: Ambient speech context
+    description: >-
+      Settings for the ambient speech extension. They apply only while it is enabled above.
+    fields:
+      retention_hours:
+        name: Retention (hours)
+        description: >-
+          How long a stored transcript is kept before it is discarded. Independent of how many
+          lines reach the resident. Audio itself is never stored.
+      max_lines:
+        name: Lines given to the resident
+        description: >-
+          How many of the most recent utterances are offered to the resident's turn. The full
+          history stays in a private file; this only controls how much of it is put in front of
+          the agent.
