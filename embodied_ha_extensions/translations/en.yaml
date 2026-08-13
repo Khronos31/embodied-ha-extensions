@@ -21,7 +21,11 @@ configuration:
         name: Retention (hours)
         description: >-
           How long a stored transcript is kept before it is discarded. Independent of how many
-          lines reach the resident. Audio itself is never stored.
+          lines reach the resident. Audio itself is never stored. To erase what is held right now,
+          stop this add-on, delete auditory_events.jsonl and recent_auditory_events.jsonl from
+          /config/embodied-ha-extensions/apps/ambient_speech_context/, then start it again.
+          Deleting them while it runs does not clear anything: the next utterance writes the
+          history back out from memory.
       max_lines:
         name: Lines given to the resident
         description: >-

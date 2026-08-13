@@ -20,6 +20,10 @@ configuration:
         name: 保持期間（時間）
         description: >-
           保存した文字起こしを何時間で捨てるか。住人へ渡す件数とは別の設定です。音声そのものは保存しません。
+          いま残っている分をすぐ消したいときは、このアドオンを停止してから
+          /config/embodied-ha-extensions/apps/ambient_speech_context/ の auditory_events.jsonl と
+          recent_auditory_events.jsonl を削除し、起動し直してください。稼働中に消すと、次の発話が
+          届いたときにメモリ上の履歴から書き戻されます。
       max_lines:
         name: 住人へ渡す件数
         description: >-

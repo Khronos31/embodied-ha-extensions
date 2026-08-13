@@ -37,6 +37,19 @@ This repository is a curated host for features that share the same trust boundar
     └── status.json
 ```
 
+### Erasing the stored transcripts
+
+There is no delete button yet. To erase what is held right now:
+
+1. Stop the add-on, or clear it from **Enabled extensions**.
+2. Delete `auditory_events.jsonl` and `recent_auditory_events.jsonl` from
+   `/config/embodied-ha-extensions/apps/ambient_speech_context/`.
+3. Start it again.
+
+**Deleting them while it runs does not clear anything.** The history is held in memory and rewritten
+to disk on the next accepted event, so the lines come back. After a stop-delete-start the counters
+return to zero and nothing is reported as recovered or corrupt.
+
 The default history window is 24 hours and the prompt projection is the latest 3 complete events in old-to-new order. Disk use is additionally bounded to 2,048 complete events and 32 MiB. Rewritten files use private mode and atomic replacement. The extension does not capture RTSP, run VAD/STT, identify speakers, store raw audio, or call an LLM.
 
 The generated context labels transcripts as **untrusted environmental observations**, not commands. This is an interpretation boundary, not publisher authentication: any MQTT client with broker access may read or forge messages on the fixed topic. Enabling the feature therefore exposes household transcripts to authorized broker clients and stores them on the Home Assistant configuration volume.
